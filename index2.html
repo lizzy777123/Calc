@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tax Optimizer Calculator</title>
+    <style>
+        :root {
+            --primary: #0f172a;
+            --accent: #2563eb;
+            --text: #334155;
+            --bg: #f8fafc;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background-color: var=--bg);
+            color: var(--text);
+            padding: 20px;
+        }
+
+        .calc-container {
+            max-width: 550px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+        }
+
+        h2 {
+            color: var(--primary);
+            margin-top: 0;
+            font-size: 1.5rem;
+        }
+
+        .input-group {
+            margin-bottom: 24px;
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 0.95rem;
+        }
+
+        .slider-meta {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9rem;
+            color: #64748b;
+            margin-top: 4px;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            background: #e2e8f0;
+            border-radius: 4px;
+            appearance: none;
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--accent);
+            cursor: pointer;
+        }
+
+        .results-box {
+            background: #f1f5f9;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 25px;
+        }
+
+        .result-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .result-row.total {
+            border-bottom: none;
+            font-weight: 700;
+            font-size: 1.2rem;
+            color: var(--primary);
+            padding-top: 12px;
+        }
+
+        .cta-box {
+            margin-top: 25px;
+            background: linear-gradient(135deg, #1e3a8a, #0f172a);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .cta-box p {
+            margin: 0 0 15px 0;
+            font-size: 0.95rem;
+            line-height: 1.4;
+        }
+
+        .cta-button {
+            display: inline-block;
+            background: #3b82f6;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: background 0.2s;
+        }
+
+        .cta-button:hover {
+            background: #2563eb;
+        }
+    </style>
+</head>
+<body>
+
+<div class="calc-container">
+    <h2>Dividend vs Salary Optimizer</h2>
+    <p style="font-size: 0.9rem; color: #64748b; margin-bottom: 25px;">
+        Find the most tax-efficient structure for your limited company director mix.
+    </p>
+
+    <!-- Inputs -->
+    <div class="input-group">
+        <label for="salary">Annual Salary: <span id="salary-val">£12,570</span></label>
+        <input type="range" id="salary" min="0" max="50000" step="500" value="12570">
+        <div class="slider-meta"><span>£0</span><span>£50k</span></div>
+    </div>
+
+    <div class="input-group">
+        <label for="dividends">Annual Dividends: <span id="dividends-val">£30,000</span></label>
+        <input type="range" id="dividends" min="0" max="100000" step="1000" value="30000">
+        <div class="slider-meta"><span>£0</span><span>£100k</span></div>
+    </div>
+
+    <!-- Live Outputs -->
+    <div class="results-box">
+        <div class="result-row">
+            <span>Est. Salary Income Tax</span>
+            <span id="tax-out">£0</span>
+        </div>
+        <div class="result-row">
+            <span>Est. Dividend Tax</span>
+            <span id="div-tax-out">£0</span>
+        </div>
+        <div class="result-row total">
+            <span>Estimated Take-Home</span>
+            <span id="takehome-out">£0</span>
+        </div>
+    </div>
+
+    <!-- Lead Gen Gate -->
+    <div class="cta-box">
+        <p>Could you structure your extra revenue more efficiently to cut your overall tax liability?</p>
+        <a href="https://yourfirm.com/book-call" class="cta-button" target="_blank">Book a Free 15-Min Strategy Session</a>
+    </div>
+</div>
+
+<script>
+    const salaryInput = document.getElementById('salary');
+    const dividendInput = document.getElementById('dividends');
+    
+    const salaryValText = document.getElementById('salary-val');
+    const dividendValText = document.getElementById('dividends-val');
+    
+    const taxOut = document.getElementById('tax-out');
+    const divTaxOut = document.getElementById('div-tax-out');
+    const takehomeOut = document.getElementById('takehome-out');
+
+    function formatCurrency(num) {
+        return '£' + Math.round(num).toLocaleString('en-GB');
+    }
+
+    function calculateTax() {
+        const salary = parseFloat(salaryInput.value);
+        const dividends = parseFloat(dividendInput.value);
+
+        // UI Text Updates
+        salaryValText.innerText = formatCurrency(salary);
+        dividendValText.innerText = formatCurrency(dividends);
+
+        // 1. Simplified Income Tax (Basic Rate)
+        const personalAllowance = 12570;
+        let incomeTax = 0;
+        if (salary > personalAllowance) {
+            incomeTax = (salary - personalAllowance) * 0.20; 
+        }
+
+        // 2. Simplified Dividend Tax (Basic Rate)
+        const dividendAllowance = 500;
+        let dividendTax = 0;
+        if (dividends > dividendAllowance) {
+            dividendTax = (dividends - dividendAllowance) * 0.0875;
+        }
+
+        // 3. Totals
+        const totalTax = incomeTax + dividendTax;
+        const grossTotal = salary + dividends;
+        const netTakeHome = grossTotal - totalTax;
+
+        // Render Outputs
+        taxOut.innerText = formatCurrency(incomeTax);
+        divTaxOut.innerText = formatCurrency(dividendTax);
+        takehomeOut.innerText = formatCurrency(netTakeHome);
+    }
+
+    // Event Listeners for Real-Time Updates
+    salaryInput.addEventListener('input', calculateTax);
+    dividendInput.addEventListener('input', calculateTax);
+
+    // Initial calculation on load
+    calculateTax();
+</script>
+
+</body>
+</html>
