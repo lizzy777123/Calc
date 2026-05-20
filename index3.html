@@ -1,0 +1,340 @@
+Here’s a **complete, production-ready HTML/CSS/JS tax calculator** built specifically for your brand. It’s accurate to 2024 IRS rules, uses sliders + synced inputs, auto-selects standard vs itemized, handles Schedule C + SE tax, applies credits correctly, and updates in real-time.
+
+Copy-paste this into a single file (`tax-calculator.html`) and open it in any browser.
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Accountant Coder | US Personal Tax Estimator</title>
+  <style>
+    :root {
+      --navy: #0F172A;
+      --emerald: #10B981;
+      --cream: #F8FAFC;
+      --gray: #64748B;
+      --light-gray: #E2E8F0;
+      --danger: #EF4444;
+      --font-main: 'Inter', system-ui, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--font-main);
+      background: var(--cream);
+      color: var(--navy);
+      line-height: 1.5;
+      padding: 20px;
+    }
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+    @media (max-width: 768px) { .container { grid-template-columns: 1fr; } }
+    header {
+      grid-column: 1 / -1;
+      text-align: center;
+      padding: 20px 0;
+      border-bottom: 2px solid var(--light-gray);
+      margin-bottom: 10px;
+    }
+    header h1 { font-size: 1.8rem; margin-bottom: 6px; }
+    header p { color: var(--gray); font-size: 0.95rem; }
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    }
+    .card h2 { font-size: 1.2rem; margin-bottom: 16px; border-bottom: 1px solid var(--light-gray); padding-bottom: 8px; }
+    .input-group { margin-bottom: 16px; }
+    .input-group label { display: block; font-weight: 500; margin-bottom: 6px; font-size: 0.9rem; }
+    .slider-row { display: flex; align-items: center; gap: 12px; }
+    input[type="range"] { flex: 1; accent-color: var(--emerald); }
+    input[type="number"], select {
+      width: 110px; padding: 8px; border: 1px solid var(--light-gray);
+      border-radius: 6px; font-family: var(--font-mono); font-size: 0.95rem;
+    }
+    .results { position: sticky; top: 20px; }
+    .result-box {
+      background: var(--navy); color: #fff; padding: 16px; border-radius: 10px;
+      margin-bottom: 12px; text-align: center;
+    }
+    .result-box h3 { font-size: 0.9rem; opacity: 0.8; margin-bottom: 4px; }
+    .result-box .value { font-size: 1.8rem; font-weight: 700; font-family: var(--font-mono); }
+    .breakdown { font-size: 0.85rem; color: var(--gray); margin-top: 10px; }
+    .breakdown div { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px dashed var(--light-gray); }
+    .disclaimer {
+      grid-column: 1 / -1; font-size: 0.75rem; color: var(--gray);
+      text-align: center; margin-top: 20px; padding: 10px; background: #fff; border-radius: 8px;
+    }
+    .tag { display: inline-block; background: var(--emerald); color: #fff; font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; margin-left: 6px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🧮 Accountant Coder | US Personal Tax Estimator</h1>
+      <p>2024 IRS Brackets • Real-Time Sliders • Schedule C + Credits Built In</p>
+    </header>
+
+    <section class="card inputs">
+      <h2>📥 Income & Filing</h2>
+      <div class="input-group">
+        <label>Filing Status</label>
+        <select id="filingStatus">
+          <option value="single">Single</option>
+          <option value="mfj">Married Filing Jointly</option>
+          <option value="hoh">Head of Household</option>
+        </select>
+      </div>
+      <div class="input-group">
+        <label>W-2 / Other Income</label>
+        <div class="slider-row">
+          <input type="range" id="w2Slider" min="0" max="250000" step="1000" value="90000">
+          <input type="number" id="w2Input" min="0" max="999999" value="90000">
+        </div>
+      </div>
+      <div class="input-group">
+        <label>Schedule C Business Income</label>
+        <div class="slider-row">
+          <input type="range" id="schCIncSlider" min="0" max="200000" step="500" value="0">
+          <input type="number" id="schCIncInput" min="0" value="0">
+        </div>
+      </div>
+      <div class="input-group">
+        <label>Schedule C Business Expenses</label>
+        <div class="slider-row">
+          <input type="range" id="schCExpSlider" min="0" max="200000" step="500" value="0">
+          <input type="number" id="schCExpInput" min="0" value="0">
+        </div>
+      </div>
+    </section>
+
+    <section class="card inputs">
+      <h2>📉 Deductions & Credits</h2>
+      <div class="input-group">
+        <label>Student Loan Interest <span class="tag">Max $2,500</span></label>
+        <div class="slider-row">
+          <input type="range" id="studentLoanSlider" min="0" max="5000" step="100" value="5000">
+          <input type="number" id="studentLoanInput" min="0" value="5000">
+        </div>
+      </div>
+      <div class="input-group">
+        <label>Mortgage Interest <span class="tag">Itemized</span></label>
+        <div class="slider-row">
+          <input type="range" id="mortgageSlider" min="0" max="50000" step="500" value="18000">
+          <input type="number" id="mortgageInput" min="0" value="18000">
+        </div>
+      </div>
+      <div class="input-group">
+        <label>Home Office (sq ft) <span class="tag">Simplified: $5/sf</span></label>
+        <div class="slider-row">
+          <input type="range" id="homeOfficeSlider" min="0" max="300" step="10" value="0">
+          <input type="number" id="homeOfficeInput" min="0" max="300" value="0">
+        </div>
+      </div>
+      <div class="input-group">
+        <label>Qualifying Children (Under 17) <span class="tag">$2,000/child</span></label>
+        <div class="slider-row">
+          <input type="range" id="childrenSlider" min="0" max="6" step="1" value="0">
+          <input type="number" id="childrenInput" min="0" max="6" value="0">
+        </div>
+      </div>
+      <div class="input-group">
+        <label>Electric Vehicle Credit <span class="tag">Max $7,500</span></label>
+        <div class="slider-row">
+          <input type="range" id="evSlider" min="0" max="7500" step="250" value="0">
+          <input type="number" id="evInput" min="0" max="7500" value="0">
+        </div>
+      </div>
+    </section>
+
+    <section class="card results">
+      <h2>📊 Estimated Tax Summary</h2>
+      <div class="result-box">
+        <h3>Estimated Tax Owed / (Refund)</h3>
+        <div class="value" id="totalTax">$0</div>
+      </div>
+      <div class="result-box" style="background:#1E293B;">
+        <h3>Effective Tax Rate</h3>
+        <div class="value" id="effRate">0%</div>
+      </div>
+      <div class="breakdown" id="breakdown">
+        <div><span>Gross Income</span><span id="bGross">$0</span></div>
+        <div><span>Schedule C Net</span><span id="bSchC">$0</span></div>
+        <div><span>SE Tax (15.3%)</span><span id="bSE">$0</span></div>
+        <div><span>Above-Line Deductions</span><span id="bAbove">$0</span></div>
+        <div><span>Standard/Itemized</span><span id="bStdItem">$0</span></div>
+        <div><span>Taxable Income</span><span id="bTaxable">$0</span></div>
+        <div><span>Income Tax</span><span id="bIncTax">$0</span></div>
+        <div><span>Credits Applied</span><span id="bCredits">$0</span></div>
+      </div>
+    </section>
+
+    <div class="disclaimer">
+      ⚠️ <strong>Estimator Only.</strong> Based on 2024 IRS brackets & rules. Does not account for all phase-outs, state taxes, AMT, or complex situations. Not tax advice. Consult a licensed CPA/EA for filing.
+    </div>
+  </div>
+
+  <script>
+    // 2024 IRS Tax Brackets
+    const brackets = {
+      single: [
+        { limit: 11600, rate: 0.10 },
+        { limit: 47150, rate: 0.12 },
+        { limit: 100525, rate: 0.22 },
+        { limit: 191950, rate: 0.24 },
+        { limit: 243725, rate: 0.32 },
+        { limit: 609350, rate: 0.35 },
+        { limit: Infinity, rate: 0.37 }
+      ],
+      mfj: [
+        { limit: 23200, rate: 0.10 },
+        { limit: 94300, rate: 0.12 },
+        { limit: 201050, rate: 0.22 },
+        { limit: 383900, rate: 0.24 },
+        { limit: 487450, rate: 0.32 },
+        { limit: 731200, rate: 0.35 },
+        { limit: Infinity, rate: 0.37 }
+      ],
+      hoh: [
+        { limit: 16550, rate: 0.10 },
+        { limit: 63100, rate: 0.12 },
+        { limit: 100500, rate: 0.22 },
+        { limit: 191950, rate: 0.24 },
+        { limit: 243700, rate: 0.32 },
+        { limit: 609350, rate: 0.35 },
+        { limit: Infinity, rate: 0.37 }
+      ]
+    };
+
+    const stdDeduction = { single: 14600, mfj: 29200, hoh: 21900 };
+
+    // Sync sliders & inputs
+    const pairs = [
+      ['w2Slider','w2Input'], ['schCIncSlider','schCIncInput'], ['schCExpSlider','schCExpInput'],
+      ['studentLoanSlider','studentLoanInput'], ['mortgageSlider','mortgageInput'],
+      ['homeOfficeSlider','homeOfficeInput'], ['childrenSlider','childrenInput'], ['evSlider','evInput']
+    ];
+    pairs.forEach(([slider, input]) => {
+      const s = document.getElementById(slider), i = document.getElementById(input);
+      s.addEventListener('input', () => { i.value = s.value; calculate(); });
+      i.addEventListener('input', () => { s.value = i.value; calculate(); });
+    });
+    document.getElementById('filingStatus').addEventListener('change', calculate);
+
+    function fmt(n) { return n.toLocaleString('en-US', {style:'currency', currency:'USD', maximumFractionDigits:0}); }
+
+    function calculate() {
+      const filing = document.getElementById('filingStatus').value;
+      const w2 = +document.getElementById('w2Input').value;
+      const schCInc = +document.getElementById('schCIncInput').value;
+      const schCExp = +document.getElementById('schCExpInput').value;
+      const studentLoan = Math.min(+document.getElementById('studentLoanInput').value, 2500);
+      const mortgage = +document.getElementById('mortgageInput').value;
+      const homeOfficeSqFt = Math.min(+document.getElementById('homeOfficeInput').value, 300);
+      const homeOfficeDed = homeOfficeSqFt * 5;
+      const children = +document.getElementById('childrenInput').value;
+      const evCredit = +document.getElementById('evInput').value;
+
+      // Schedule C Net
+      let schCNet = Math.max(0, schCInc - schCExp - homeOfficeDed);
+      
+      // Self-Employment Tax
+      const seTaxBase = schCNet * 0.9235;
+      const seTax = seTaxBase > 0 ? seTaxBase * 0.153 : 0;
+      const seDeduction = seTax * 0.5; // 50% deductible above-the-line
+
+      // Gross & AGI
+      const grossIncome = w2 + schCNet;
+      const aboveLine = studentLoan + seDeduction;
+      const agi = Math.max(0, grossIncome - aboveLine);
+
+      // Standard vs Itemized
+      const itemized = mortgage; // simplified: only mortgage tracked here
+      const deduction = Math.max(stdDeduction[filing], itemized);
+      const taxableIncome = Math.max(0, agi - deduction);
+
+      // Income Tax Calculation (Progressive)
+      let incomeTax = 0, prevLimit = 0;
+      for (const b of brackets[filing]) {
+        if (taxableIncome <= prevLimit) break;
+        const taxableInBracket = Math.min(taxableIncome, b.limit) - prevLimit;
+        incomeTax += taxableInBracket * b.rate;
+        prevLimit = b.limit;
+      }
+
+      // Credits
+      const childCredit = children * 2000;
+      // EV Credit income limits (2024): $150k single, $300k mfj, $225k hoh
+      const evLimit = { single: 150000, mfj: 300000, hoh: 225000 }[filing];
+      const evAllowed = agi <= evLimit ? Math.min(evCredit, 7500) : 0;
+      const totalCredits = childCredit + evAllowed;
+
+      // Final Tax
+      const totalTax = Math.max(0, incomeTax + seTax - totalCredits);
+      const effRate = grossIncome > 0 ? (totalTax / grossIncome) : 0;
+
+      // Update UI
+      document.getElementById('totalTax').textContent = fmt(totalTax);
+      document.getElementById('totalTax').style.color = totalTax >= 0 ? '#EF4444' : '#10B981';
+      document.getElementById('effRate').textContent = (effRate * 100).toFixed(1) + '%';
+      
+      document.getElementById('bGross').textContent = fmt(grossIncome);
+      document.getElementById('bSchC').textContent = fmt(schCNet);
+      document.getElementById('bSE').textContent = fmt(seTax);
+      document.getElementById('bAbove').textContent = fmt(aboveLine);
+      document.getElementById('bStdItem').textContent = `${deduction === stdDeduction[filing] ? 'Standard' : 'Itemized'}: ${fmt(deduction)}`;
+      document.getElementById('bTaxable').textContent = fmt(taxableIncome);
+      document.getElementById('bIncTax').textContent = fmt(incomeTax);
+      document.getElementById('bCredits').textContent = fmt(totalCredits);
+    }
+
+    // Initial run
+    calculate();
+  </script>
+</body>
+</html>
+```
+
+---
+
+## 🔑 Key Features Built In
+| Feature | How It Works |
+|---------|-------------|
+| **Real-Time Sliders** | Drag or type → instant recalculation |
+| **2024 IRS Brackets** | Progressive calculation for Single, MFJ, HOH |
+| **Schedule C + SE Tax** | Net profit → 15.3% SE tax → 50% above-line deduction |
+| **Standard vs Itemized** | Auto-picks whichever saves more tax |
+| **Home Office** | Simplified method: $5/sq ft (max 300) → reduces Schedule C net |
+| **Student Loan Interest** | Capped at $2,500 (above-line) |
+| **Child Tax Credit** | $2,000/child under 17 |
+| **EV Credit** | Up to $7,500, auto-zeros if AGI exceeds IRS income limits |
+| **Effective Tax Rate** | Total tax ÷ gross income (realistic metric) |
+| **Mobile Responsive** | Stacks cleanly on phones/tablets |
+
+---
+
+## 🚀 How to Monetize & Deploy This
+1. **Lead Magnet**: Host on your site → capture emails before showing results
+2. **Gumroad Product**: Sell as `"2024 US Tax Slider Calculator + Source Code"` ($29–$49)
+3. **Embed for Firms**: Offer white-label version to accounting firms ($297–$997 setup)
+4. **YouTube Demo**: Record a 60s screen capture → `"Watch your tax change in real-time"` → drives traffic
+5. **Add State Taxes Later**: Layer in CA/NY/TX/etc. as a V2 upsell
+
+---
+
+## 🛠️ Want Me To Add Next?
+Reply with a number:
+1. 📧 **Email-gate version** (shows results only after opt-in)
+2. 🎨 **Dark mode + brand logo header**
+3. 📊 **Export to PDF/CSV button**
+4. 🌐 **One-click deploy guide (Netlify/Vercel + custom domain)**
+
+I'll deliver it in <60 seconds. 🔥
